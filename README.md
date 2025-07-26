@@ -191,3 +191,9 @@ $ brew install python
 ```
 
 This command will download, install, and set up the latest version of Python on your machine. You can make sure everything went correctly by testing if you can access Python from the terminal. If you get an error message, then go through the install steps again to make sure you have a working installation.
+
+
+Project of:
+- De Guzman, Franz Ivan.
+- Sean Cruz
+- Sun Jung Yun

@@ -1,0 +1,6 @@
+# SQLite Database URL
+DATABASE_URL="sqlite:///./sql_app.db"
+
+# Google Maps API Key (Replace with your actual key for production)
+# Get one from https://developers.google.com/maps/documentation/directions/start
+GOOGLE_MAPS_API_KEY="YOUR_MOCK_GOOGLE_MAPS_API_KEY"

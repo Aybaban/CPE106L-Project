@@ -1,201 +1,178 @@
-# Accessible Transportation Scheduler
+# Community Ride Scheduling Application: Setup & Run Guide
 
-## Download [Python](https://www.python.org/downloads/) by clicking this link
-All information came from [Real Python](https://realpython.com/installing-python/#macos-how-to-install-python-from-homebrew)
+This document provides a complete, step-by-step guide to set up and run the "Community Ride Scheduling Application" project. The project consists of a FastAPI backend (using MongoDB), a Flet desktop frontend, and Matplotlib visualization utilities.
 
-# Windows: How to Check or Get Python
+## 1. Project Overview
 
-In this section, you’ll learn to check whether Python is installed on your Windows operating system (OS) and which version you have. You’ll also explore three installation options that you can use on Windows.
+- **Purpose:** To help elderly or individuals with accessibility needs schedule rides with local volunteers or services.
+
+- **Backend (FastAPI):** Handles ride matching, scheduling, user/volunteer management, and interacts with the database. Uses MongoDB for data storage.
+
+- **Frontend (Flet):** A desktop application for booking rides and managing schedules.
+
+- **Visualization (Matplotlib):** Utility scripts to visualize ride data (e.g., frequency, wait times).
 
 
-Checking the Python Version on Windows
-To check whether you already have Python on your Windows machine, open a command-line application like PowerShell or the Windows Terminal.
+## 2. Prerequisites
+Before you begin, ensure you have the following installed on your host machine (the computer running VirtualBox) and your Ubuntu 22.04 Virtual Machine.
 
-Follow the steps below to open PowerShell on Windows:
+### 2.1. On Your Host Machine
+VirtualBox: Download and install the latest version from [VirtualBox](https://www.virtualbox.org/wiki/Downloads).
 
+### 2.2. On Your Ubuntu 22.04 Virtual Machine
+- Ubuntu 22.04 LTS Desktop: Installed as a guest operating system in VirtualBox.
+
+- VirtualBox Guest Additions: Installed within the Ubuntu VM for better performance and integration (e.g., screen resizing, shared clipboard).
+
+- Python 3.10+: Ubuntu 22.04 comes with Python 3.10 pre-installed.
+
+- ```pip``` and ```venv```: Python package installer and virtual environment tool.
+
+- MongoDB Community Edition: The database server.
+
+## 3. VirtualBox & Ubuntu 22.04 Setup (Detailed Steps)
+Follow these steps to prepare your development environment.
+
+### 3.1. Install VirtualBox (on Host Machine)
+Download VirtualBox from the official website.
+
+Run the installer and follow the on-screen prompts.
+
+### 3.2. Download Ubuntu 22.04 LTS (on Host Machine)
+Download the Ubuntu Desktop 22.04 LTS ISO image from https://ubuntu.com/download/desktop.
+
+### 3.3. Create a New Virtual Machine (in VirtualBox)
+1. Open VirtualBox.
+
+2. Click "New" to create a new VM.
+
+3. Name: ```Ubuntu 22.04 Ride App``` (or a similar descriptive name).
+
+4. Folder: Choose a location on your host machine to store the VM files.
+
+5. ISO Image: Browse and select the Ubuntu 22.04 LTS ISO you downloaded.
+
+6. Type: ```Linux```
+
+7. Version: ```Ubuntu (64-bit)```
+
+8. Base Memory: Allocate at least ```4096 MB``` (4 GB) for better performance.
+
+9. Processors: Allocate at least ```2 CPUs```.
+
+10. Hard Disk: Create a virtual hard disk. Allocate at least ```25 GB``` (dynamically allocated is fine).
+
+11. Click "Finish".
+
+## 3.4. Install Ubuntu 22.04 in the VM
+1. Select your newly created VM in VirtualBox and click "Start".
+
+2. The VM will boot from the Ubuntu ISO.
+
+3. Follow the on-screen instructions for installation:
+
+    - Choose your language.
+
+    - Select "Normal installation" and "Download updates while installing Ubuntu" (recommended).
+
+    - Choose "Erase disk and install Ubuntu" (this refers to the virtual disk, not your host machine's disk).
+
+    - Set up your timezone, keyboard layout, and create a user account (e.g., ```vboxuser```, with a strong password). Remember this username and password!
+
+4. Once installation is complete, you'll be prompted to restart. Remove the installation medium (VirtualBox usually does this automatically).
+
+## 3.5. Install VirtualBox Guest Additions (in Ubuntu VM)
+This step is crucial for performance and usability.
+
+1. After logging into your Ubuntu VM, go to the VirtualBox menu bar at the top of your host machine: ```Devices``` -> ```Insert Guest Additions CD Image....```
+
+2. In your Ubuntu VM, a file manager window might pop up showing the contents of the "VBox_GAs_..." CD. If not, open the file manager and navigate to the "VBox_GAs_..." CD drive.
+
+3. Right-click in the empty space within that file manager window and select "Open in Terminal".
+
+4. In the terminal, run the installer script:
 ```
-Press the Win key.
-Type PowerShell.
-Press Enter.
+sudo sh ./VBoxLinuxAdditions.run
 ```
-# Windows: How to Install Python Using the Official Installer
+5. Troubleshooting "vboxuser is not in the sudoers file" (if it occurs):
+If you get this error, it means your user doesn't have administrative privileges.
 
-For developers needing a full-featured Python development environment, installing from the official Python installer is recommended. It offers more customization and control over the installation process.
+- Restart your Ubuntu VM.
 
-In this section, you’ll go through the necessary steps to install Python using the official installer from Python.org.
+- As it's booting, immediately press and hold the ```Shift``` key (or ```Esc```) to bring up the GRUB boot menu.
 
+- Select "Advanced options for Ubuntu".
 
-## Step 1: Download the Official Python Installer
-Follow the steps below to download the official Python installer from the Python.org site:
+- Choose the option that says "Ubuntu, with Linux ... (recovery mode)".
 
+- From the recovery menu, select "root Drop to root shell prompt".
 
-1. Open your browser and navigate to the downloads page for Windows on Python.org.
+- When prompted "Give root password for maintenance (or press Control-D to continue):", press Enter (or ```Ctrl+D``` if Enter doesn't work).
 
-2. Under the Python Releases for Windows heading, click the link for the Latest Python 3 Release - Python 3.x.z.
-
-3. Scroll to the bottom and select either Windows installer (64-bit) or Windows installer (32-bit).
-
-When you finish downloading the installer, then you can move on to the next step.
-
-## Step 2: Run the Python Installer
-Once you’ve chosen and downloaded an installer, run it by double-clicking on the file.
-
-Windows Python Installer
-There are four important things to notice about this dialog box:
-
-1. The default install path is in the AppData/ directory of the current Windows user.
-2. The Customize installation button allows you to customize the installation location and some additional features, including installing pip and IDLE.
-3. The Use admin privileges when installing py.exe allows every user on the machine access the py.exe launcher.
-4. The Add python.exe to PATH checkbox is also unchecked by default. There are several reasons that you might not want Python on PATH, so make sure you understand the implications before you check this box.
-
-As you can conclude, the official Python installer gives you granular control over the installation process on Windows.
-
+- At the root prompt (```#```), remount the filesystem as read-write:
 ```
-Note: If you want the python command to work on your Windows machine, then it’s recommended that you activate the PATH check box.
+mount -o remount,rw /
 ```
-
-Use the options in the dialog box to customize the installation to meet your needs. Then click Install. That’s it! You now have the latest version of Python 3 on your Windows machine!
-
-If you’re interested in where the installation is located, then you can use the where.exe command in PowerShell:
-
+- Add your user (vboxuser) to the sudo group:
 ```
-PS> where.exe python
-C:\Users\realpython\AppData\Local\Microsoft\WindowsApps\python.exe
+adduser vboxuser sudo
 ```
+(Enter your vboxuser password if prompted).
 
-Note that the where.exe command will work only if Python has been installed for your user account.
-
-
-# Linux: How to Check or Get Python
-
-In this section, you’ll learn how to check which version of Python, if any, is on your Linux computer. You’ll also learn about the installation options to get the latest Python on Linux systems.
-
-Checking the Python Version on Linux
-Most Linux distributions come with Python installed by default. In most cases, the installed version won’t be the latest Python. To find out which version of Python you have on Linux, open a terminal window and run the following command:
-
+6. Once sudo sh ./VBoxLinuxAdditions.run completes successfully, restart the VM:
 ```
-$ python3 --version
+sudo reboot
 ```
+After reboot, you should have features like auto-resizing screen and shared clipboard.
 
-If you have Python on your machine, then this command will respond with a version number. Instead of --version, you can use the shorter -V switch:
+##3.6. Update System and Install Python Tools (in Ubuntu VM)
+1. Open a terminal (Ctrl+Alt+T).
 
+2. Update your package lists:
 ```
-$ python3 -V
+sudo apt update
 ```
-Either of these switches will give you the version number of the Python installation that the command is associated with. If your current version is outdated, you’ll want to get the latest version of Python.
-
-# Linux: How to Build Python From Source Code
-You’ll have at least three reasons to choose to build Python from source code:
-
-1. You need to install the latest version of Python or a version unavailable on your distribution’s repository.
-2. You need to control how Python is compiled, such as when you want to lower the memory footprint on embedded systems.
-3. You want to try out pre-release versions to explore new features.
-
-You can run the steps in the following sections to complete the installation on your Linux machine.
-
-## Step 1: Download the Python Source Code
-To start, you need to clone the cpython repository from GitHub or get the Python source code from Python.org. If you go to the downloads page, then you’ll find the latest source for Python 3 at the top.
-
-When you select the latest Python version, you’ll see a Files section at the bottom of the page. Select Gzipped source tarball and download it to your machine.
-
-If you prefer to use your command line, then you can use wget to download the file to your current directory:
-
+3. Upgrade installed packages:
 ```
-$ wget https://www.python.org/ftp/python/3.x.z/Python-3.x.z.tgz
+sudo apt upgrade -y
 ```
-
-For this command to work, you must specify the version to download. When the tarball finishes downloading, there are a few things you’ll need to do to prepare your system for building Python.
-
-## Step 2: Prepare Your System for Building Python
-There are a few distro-specific steps involved in building Python from source. The goal of this section is to prepare your system for building Python. Below, you’ll find specific steps for some popular Linux distributions.
-
-## Ubuntu, Debian, and Linux Mint
-First, update the list of available packages and upgrade them using the following commands:
-
+4. Install pip and venv (Python virtual environment tool):
 ```
-$ sudo apt update
-$ sudo apt upgrade
-```
-
-Note that because you’re using the sudo command, you’ll be prompted to provide your root password.
-
-Next, make sure you have all of the build requirements installed:
-
-```
-$ sudo apt install -y make build-essential libssl-dev zlib1g-dev \
-       libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
-       libncurses5-dev libncursesw5-dev xz-utils tk-dev
-```
-
-It’s okay if you already have some of these requirements installed on your system. You can execute the above commands, and any existing packages will be skipped.
-
-
-
-
-# macOS: How to Check or Get Python
-Python comes preinstalled on macOS. However, the installed version may not be the most recent one. To take advantage of Python’s latest features, you’ll need to download and install newer versions alongside the system one.
-
-Checking the Python Version on a macOS
-To check which Python version you have on your Mac, open a command-line application like Terminal.
-
-Here’s how you open Terminal on macOS:
-
-```
-Press the Cmd+Space keys.
-Type Terminal.
-Press Enter.
+sudo apt install python3-pip python3-venv -y
 ```
 
-Alternatively, you can open Finder and navigate to Go → Utilities → Terminal.
+## 3.7. Install MongoDB Community Edition (in Ubuntu VM)
+1. Open a terminal.
 
-With the command line open, type in the following commands:
-
+2. Import the MongoDB public GPG key:
 ```
-$ python3 --version
+curl -fsSL https://www.mongodb.org/static/pgp/server-6.0.asc | \
+   sudo gpg -o /usr/share/keyrings/mongodb-server-6.0.gpg \
+   --dearmor
 ```
-
-This command should respond with a version number. Alternatively, you can use the shorter -V switch, which has the same effect.
-
-In practice, you’d want to get the latest version of Python if none of the above commands returns a version number or if you have a version of Python 3 that isn’t the latest available. Now, you can read through the following sections to learn about the different options for installing Python on macOS.
-
-# macOS: How to Install Python From Homebrew
-
-The Homebrew package manager is another good option for installing Python on macOS. You can install Python using the Homebrew package manager in two steps, but first, you need to be aware of some limitations of the Python package on Homebrew.
-
-The Python distribution available on Homebrew doesn’t include the Tcl/Tk dependency, which is required by the Tkinter module. Tkinter is the standard library module for developing graphical user interfaces in Python and is an interface for the Tk GUI toolkit, which isn’t part of Python.
-
-Homebrew doesn’t install the Tk GUI toolkit dependency. Instead, it relies on an existing version installed on your system. The system version of Tcl/Tk may be outdated or missing entirely and could prevent you from using Tkinter.
-
-Finally, note that the Python distribution on Homebrew isn’t maintained by the Python Software Foundation and could change at anytime.
-
-## Step 1: Install the Homebrew Package Manager
-
-If you already have Homebrew installed on your macOS system, then you can skip this step. If you don’t have it installed, then use the following procedure:
-
-1. Open a browser and navigate to http://brew.sh/.
-2. Copy the installation command under the Install Homebrew heading.
-3. Open a terminal window and paste the command, then press Enter.
-4. Enter your macOS user password when prompted.
-
-Depending on your Internet connection speed, the process may take a few minutes to download all of Homebrew’s required files. Once the installation is complete, you’ll be back at the shell prompt in your terminal window.
-
-Note: If you’re doing this on a fresh install of macOS, you may get a pop-up alert asking you to install Apple’s command line developer tools. These tools are necessary for installation, so you can confirm the dialog box by clicking Install.
-
-After the developer tools are installed, you’ll need to press Enter to continue installing Homebrew.
-
-Now that Homebrew is installed, you’re ready to install Python.
-
-## Step 2: Install Python With Homebrew
-Installing Python with the Homebrew package manager is now as straightforward as running the following command:
-
+3. Create a list file for MongoDB:
 ```
-$ brew install python
+echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
 ```
+4. Reload local package database:
+```
+sudo apt update
+```
+5. Install MongoDB packages:
+```
+sudo apt install -y mongodb-org
+```
+6. Start MongoDB service:
+```
+sudo systemctl start mongod
+```
+7. Verify MongoDB status:
+```
+sudo systemctl status mongod
+```
+(Press ```q``` to exit the status view. You should see ```Active: active (running)```).
 
-This command will download, install, and set up the latest version of Python on your machine. You can make sure everything went correctly by testing if you can access Python from the terminal. If you get an error message, then go through the install steps again to make sure you have a working installation.
-
-
-Project of:
-- De Guzman, Franz Ivan.
-- Sean Cruz
-- Sun Jung Yun
+8. Enable MongoDB to start on boot (recommended):
+```
+sudo systemctl enable mongod
+```

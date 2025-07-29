@@ -165,9 +165,9 @@ async def update_ride_request_details(ride_id: int, ride_update: RideUpdate, db:
         raise HTTPException(status_code=404, detail="Ride request not found or no changes made.")
     return updated_ride
 
-@app.delete("/rides/{ride_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Users"])
+@app.delete("/rides/{ride_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Rides"])
 async def delete_ride_request_by_id(ride_id: int, db: Session = Depends(get_db)):
     """Delete a ride request by ID."""
     if not crud.delete_ride_request(db=db, ride_id=ride_id):
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Ride request not found")
     return

@@ -1,35 +1,79 @@
 """
-Pydantic Models for API Request/Response and Data Structures
-This module defines the data models used throughout the application,
-leveraging Pydantic for data validation and serialization.
+Models for Database Tables and Pydantic Models for API Request/Response
+This module defines the SQLAlchemy ORM models that map to database tables,
+and Pydantic models for data validation and serialization in the API.
 """
-from pydantic import BaseModel, Field
-from pydantic.functional_validators import BeforeValidator # NEW IMPORT
-from typing import List, Optional, Any, Annotated # MODIFIED IMPORT (added Annotated, Any)
+from sqlalchemy import Column, Integer, String, DateTime, Enum, ForeignKey, Float
+from sqlalchemy.orm import relationship
 from datetime import datetime
-from enum import Enum
+from enum import Enum as PyEnum # Use an alias to avoid conflict with SQLAlchemy's Enum
+from pydantic import BaseModel, Field
+from typing import List, Optional
 
-# Custom ObjectId type for MongoDB
-from bson import ObjectId
+# Import the Base from database.py to define SQLAlchemy models
+from backend.app.database import Base
 
-# Validator function for ObjectId
-def validate_objectid(value: Any) -> ObjectId:
-    if isinstance(value, ObjectId):
-        return value
-    if isinstance(value, str):
-        if ObjectId.is_valid(value):
-            return ObjectId(value)
-    raise ValueError("Invalid ObjectId")
+# --- SQLAlchemy ORM Models (Database Tables) ---
 
-# Define PyObjectId as an Annotated type for Pydantic v2
-PyObjectId = Annotated[ObjectId, BeforeValidator(validate_objectid)]
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    phone = Column(String, unique=True, index=True)
+    address = Column(String)
+    user_type = Column(Enum('elderly', 'accessibility', name='user_type_enum'), default='elderly')
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationship to RideRequest (one-to-many)
+    ride_requests = relationship("RideRequest", back_populates="requester")
+
+class Volunteer(Base):
+    __tablename__ = "volunteers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    phone = Column(String, unique=True, index=True)
+    car_model = Column(String, nullable=True)
+    license_plate = Column(String, nullable=True)
+    # Storing availability as a comma-separated string for simplicity
+    # For complex scheduling, a separate Availability table would be better
+    availability = Column(String, default="") # e.g., "Monday 9-12,Wednesday 1-4"
+    current_location = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationship to RideRequest (one-to-many)
+    assigned_rides = relationship("RideRequest", back_populates="assigned_volunteer")
+
+class RideRequest(Base):
+    __tablename__ = "ride_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    requester_id = Column(Integer, ForeignKey("users.id"))
+    pickup_address = Column(String)
+    destination_address = Column(String)
+    requested_time = Column(DateTime)
+    special_needs = Column(String, nullable=True)
+    status = Column(Enum('pending', 'assigned', 'in_progress', 'completed', 'cancelled', name='ride_status_enum'), default='pending')
+    assigned_volunteer_id = Column(Integer, ForeignKey("volunteers.id"), nullable=True)
+    assigned_time = Column(DateTime, nullable=True)
+    completed_time = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    distance_km = Column(Float, nullable=True)
+    estimated_duration_minutes = Column(Float, nullable=True)
+
+    # Relationships
+    requester = relationship("User", back_populates="ride_requests")
+    assigned_volunteer = relationship("Volunteer", back_populates="assigned_rides")
 
 
-class UserType(str, Enum):
+# --- Pydantic Models (API Request/Response Schemas) ---
+
+class UserType(str, PyEnum): # Using PyEnum for Pydantic
     ELDERLY = "elderly"
     ACCESSIBILITY = "accessibility"
 
-class RideStatus(str, Enum):
+class RideStatus(str, PyEnum): # Using PyEnum for Pydantic
     PENDING = "pending"
     ASSIGNED = "assigned"
     IN_PROGRESS = "in_progress"
@@ -46,13 +90,11 @@ class UserCreate(UserBase):
     pass
 
 class UserInDB(UserBase):
-    id: PyObjectId = Field(default_factory=lambda: ObjectId(), alias="_id") # Updated default_factory
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    id: int
+    created_at: datetime
 
     class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+        orm_mode = True # Enable ORM mode for Pydantic to read from SQLAlchemy models
 
 class VolunteerBase(BaseModel):
     name: str
@@ -60,22 +102,20 @@ class VolunteerBase(BaseModel):
     car_model: Optional[str] = None
     license_plate: Optional[str] = None
     availability: List[str] = Field(default_factory=list) # e.g., ["Monday 9-12", "Wednesday 1-4"]
-    current_location: Optional[str] = None # For real-time location tracking (conceptual)
+    current_location: Optional[str] = None
 
 class VolunteerCreate(VolunteerBase):
     pass
 
 class VolunteerInDB(VolunteerBase):
-    id: PyObjectId = Field(default_factory=lambda: ObjectId(), alias="_id") # Updated default_factory
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    id: int
+    created_at: datetime
 
     class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+        orm_mode = True
 
 class RideRequestBase(BaseModel):
-    requester_id: PyObjectId # Changed to PyObjectId
+    requester_id: int
     pickup_address: str
     destination_address: str
     requested_time: datetime
@@ -85,26 +125,24 @@ class RideRequestCreate(RideRequestBase):
     pass
 
 class RideRequestInDB(RideRequestBase):
-    id: PyObjectId = Field(default_factory=lambda: ObjectId(), alias="_id") # Updated default_factory
+    id: int
     status: RideStatus = RideStatus.PENDING
-    assigned_volunteer_id: Optional[PyObjectId] = None # Changed to PyObjectId
+    assigned_volunteer_id: Optional[int] = None
     assigned_time: Optional[datetime] = None
     completed_time: Optional[datetime] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    distance_km: Optional[float] = None # Calculated from Google Maps API
-    estimated_duration_minutes: Optional[float] = None # Calculated from Google Maps API
+    created_at: datetime
+    distance_km: Optional[float] = None
+    estimated_duration_minutes: Optional[float] = None
 
     class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+        orm_mode = True
 
 class RideAssignment(BaseModel):
-    ride_request_id: PyObjectId # Changed to PyObjectId
-    volunteer_id: PyObjectId # Changed to PyObjectId
+    ride_request_id: int
+    volunteer_id: int
 
 class RideUpdate(BaseModel):
     status: Optional[RideStatus] = None
-    assigned_volunteer_id: Optional[PyObjectId] = None # Changed to PyObjectId
+    assigned_volunteer_id: Optional[int] = None
     assigned_time: Optional[datetime] = None
     completed_time: Optional[datetime] = None
